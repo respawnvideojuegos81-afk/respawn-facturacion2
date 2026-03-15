@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISO | Respawn Videojuegos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(51, 65, 85, 0.5); }
+        
+        /* CONTENEDOR PDF - Optimizado para contenido real */
+        #factura-pdf {
+            width: 700px;
+            padding: 45px;
+            background-color: white !important;
+            color: #1e293b !important;
+            display: none;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+        .pdf-table th { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; text-align: left; font-size: 11px; color: #64748b; text-transform: uppercase; }
+        .pdf-table td { border: 1px solid #e2e8f0; padding: 15px 12px; vertical-align: top; font-size: 13px; color: #1e293b; line-height: 1.5; }
+        .firma-linea { border-top: 2px solid #1e293b; width: 220px; text-align: center; margin-top: 70px; padding-top: 8px; font-size: 11px; font-weight: bold; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950">
+        <div class="w-full max-w-md p-8 rounded-3xl glass shadow-2xl border-t-2 border-blue-500/30">
+            <h1 class="text-4xl font-black text-center text-blue-500 mb-8 tracking-tighter italic">RESPAWN</h1>
+            <div class="space-y-4">
+                <input type="text" id="user" placeholder="Usuario" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                <input type="password" id="pass" placeholder="Contraseña" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-900/40">ACCEDER AL SISTEMA</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-app" class="hidden container mx-auto p-4 lg:p-10">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <div>
+                <h1 class="text-3xl font-black italic tracking-tighter">RESPAWN <span class="text-blue-500">VIDEOJUEGOS</span></h1>
+                <p id="live-clock" class="text-xs text-slate-500 font-mono mt-1"></p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="limpiarFormulario()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold transition-all">🧹 Limpiar Datos</button>
+                <button onclick="location.reload()" class="px-5 py-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded-lg text-sm font-semibold transition-all">Salir</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="glass p-8 rounded-3xl space-y-5">
+                <h2 class="text-blue-400 font-bold uppercase text-xs tracking-widest flex items-center">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span> Información Cliente
+                </h2>
+                <div class="space-y-3">
+                    <input type="text" id="c-nom" placeholder="Nombre completo del cliente" class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="c-cc" placeholder="C.C. / NIT / Pasaporte" class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="c-tel" placeholder="Teléfono de contacto" class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="email" id="c-mail" placeholder="Correo electrónico" class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="c-dir" placeholder="Dirección de residencia" class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div class="glass p-8 rounded-3xl space-y-5">
+                <h2 class="text-blue-400 font-bold uppercase text-xs tracking-widest flex items-center">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span> Detalle de Venta
+                </h2>
+                <div class="space-y-3">
+                    <input type="text" id="p-nom" placeholder="Producto (Consola, Juego, Accesorio)" class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                    <textarea id="p-desc" placeholder="Descripción técnica, estado del producto y seriales..." rows="5" class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    
+                    <div class="flex justify-between items-center bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+                        <div class="text-sm">
+                            <p class="font-bold">Garantía Respawn</p>
+                            <p class="text-xs text-slate-500">Aplica bajo términos y condiciones</p>
+                        </div>
+                        <select id="p-gar" class="bg-blue-600 text-white rounded-lg px-4 py-2 font-bold cursor-pointer outline-none">
+                            <option value="SÍ">APLICA (SÍ)</option>
+                            <option value="NO">NO APLICA</option>
+                        </select>
+                    </div>
+                    <button onclick="generarPDF()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/20 transform hover:-translate-y-1 transition-all">DESCARGAR FACTURA PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="factura-pdf">
+        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1e293b; padding-bottom: 15px;">
+            <div>
+                <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #1e293b;">RESPAWN VIDEOJUEGOS</h1>
+                <p style="margin: 2px 0; font-size: 11px; color: #475569; font-weight: bold;">NIT: 900.555.221-0</p>
+                <p style="margin: 0; font-size: 10px; color: #64748b;">Calle 123 Gamer - Edificio Respawn</p>
+            </div>
+            <div style="text-align: right;">
+                <h3 style="margin:0; font-size: 13px; color: #1e293b; letter-spacing: 1px;">ORDEN DE ENTREGA</h3>
+                <p style="margin:0; font-size: 15px; font-weight: bold;" id="pdf-num"></p>
+                <p style="margin:0; font-size: 10px; color: #64748b;" id="pdf-time"></p>
+            </div>
+        </div>
+
+        <div style="margin-top: 25px; font-size: 12px; background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <p style="margin: 3px 0;"><strong>ADQUIRENTE:</strong> <span id="pdf-nom"></span></p>
+            <p style="margin: 3px 0;"><strong>IDENTIFICACIÓN:</strong> <span id="pdf-cc"></span></p>
+            <p style="margin: 3px 0;"><strong>CONTACTO:</strong> <span id="pdf-tel"></span></p>
+            <p style="margin: 3px 0;"><strong>E-MAIL:</strong> <span id="pdf-mail"></span></p>
+            <p style="margin: 3px 0;"><strong>DIRECCIÓN:</strong> <span id="pdf-dir"></span></p>
+        </div>
+
+        <table class="pdf-table">
+            <thead>
+                <tr>
+                    <th style="width: 35%;">ARTÍCULO</th>
+                    <th style="width: 50%;">ESPECIFICACIONES Y ESTADO</th>
+                    <th style="width: 15%; text-align: center;">GARANTÍA</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="pdf-p-nom" style="font-weight: 800;"></td>
+                    <td id="pdf-p-desc" style="white-space: pre-wrap;"></td>
+                    <td id="pdf-p-gar" style="text-align: center; font-weight: bold;"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="margin-top: 35px; font-size: 10px; color: #475569; background: #f1f5f9; padding: 15px; border-radius: 5px; line-height: 1.4;">
+            <strong>NOTA LEGAL:</strong> El presente documento acredita la entrega del artículo arriba descrito. La garantía cubre únicamente desperfectos técnicos de fábrica. No aplica por picos de tensión eléctrica, daños por humedad o apertura de sellos.
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 60px;">
+            <div class="firma-linea">RESPAWN VIDEOJUEGOS</div>
+            <div class="firma-linea">RECIBE: <span id="pdf-firma-cli"></span></div>
+        </div>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            if(u === 'admin' && p === '123') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('main-app').classList.remove('hidden');
+            } else { alert("Usuario o contraseña incorrectos."); }
+        }
+
+        function limpiarFormulario() {
+            if(confirm("¿Seguro que deseas limpiar todos los campos?")) {
+                const campos = ['c-nom', 'c-cc', 'c-tel', 'c-mail', 'c-dir', 'p-nom', 'p-desc'];
+                campos.forEach(id => document.getElementById(id).value = '');
+                document.getElementById('p-gar').value = 'SÍ';
+            }
+        }
+
+        setInterval(() => {
+            document.getElementById('live-clock').innerText = "SISTEMA ACTIVO: " + new Date().toLocaleString();
+        }, 1000);
+
+        async function generarPDF() {
+            const nom = document.getElementById('c-nom').value;
+            const prod = document.getElementById('p-nom').value;
+            if(!nom || !prod) return alert("Por favor completa los campos de Cliente y Producto.");
+
+            // Inyectar datos al PDF
+            document.getElementById('pdf-num').innerText = "FAC-" + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('pdf-time').innerText = new Date().toLocaleString();
+            document.getElementById('pdf-nom').innerText = nom;
+            document.getElementById('pdf-cc').innerText = document.getElementById('c-cc').value || 'N/A';
+            document.getElementById('pdf-tel').innerText = document.getElementById('c-tel').value || 'N/A';
+            document.getElementById('pdf-mail').innerText = document.getElementById('c-mail').value || 'N/A';
+            document.getElementById('pdf-dir').innerText = document.getElementById('c-dir').value || 'N/A';
+            document.getElementById('pdf-p-nom').innerText = prod;
+            document.getElementById('pdf-p-desc').innerText = document.getElementById('p-desc').value || 'Sin descripción detallada.';
+            document.getElementById('pdf-p-gar').innerText = document.getElementById('p-gar').value;
+            document.getElementById('pdf-firma-cli').innerText = nom.toUpperCase();
+
+            // Lógica de descarga
+            const element = document.getElementById('factura-pdf');
+            element.style.display = 'block';
+
+            const opt = {
+                margin: 0,
+                filename: `FACTURA_RESPAWN_${nom.replace(/\s/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 3, useCORS: true, letterRendering: true },
+                jsPDF: { unit: 'pt', format: 'letter', orientation: 'portrait' }
+            };
+
+            try {
+                await html2pdf().set(opt).from(element).save();
+                alert("Factura generada con éxito.");
+            } catch (error) {
+                console.error(error);
+                alert("Hubo un error al generar el PDF.");
+            } finally {
+                element.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
